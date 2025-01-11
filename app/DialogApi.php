@@ -46,17 +46,19 @@ class DialogApi extends Api
     {
         $decoded = $this->checkAuth();
 
-        $userFromId = $decoded->id;
-        $userToId = $request['id'] ?? '';
+        $userFromId = (int)$decoded->id;
+        $userToId = (int)$request['id'];
+
+        $dialogId = $userFromId > $userToId ? sprintf('%s_%s', $userToId, $userFromId)  : sprintf('%s_%s', $userFromId, $userToId);
 
         $offset = $request['offset'] ?? 0;
         $limit = $request['limit'] ?? 20;
 
         $pdo = (new Database())->getConnection(true);
 
-        $query = sprintf("SELECT user_from_id, user_to_id, text, created_at FROM dialog_messages WHERE user_from_id = ? AND user_to_id = ? ORDER BY created_at DESC OFFSET %d LIMIT %d", $offset, $limit);
+        $query = sprintf("SELECT user_from_id, user_to_id, text, created_at FROM dialog_messages WHERE dialog_id = ? ORDER BY created_at DESC OFFSET %d LIMIT %d", $offset, $limit);
         $stmt = $pdo->prepare($query);
-        $stmt->execute([$userFromId, $userToId]);
+        $stmt->execute([$dialogId]);
         $rowMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $dialog = [];
